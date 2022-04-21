@@ -3,11 +3,11 @@ const Product=require('../databases/model');
 const fs=require("fs");
 const stream=require("stream");
 const excel = require("exceljs");
-const readXlsxFile = require("read-excel-file/node");
+const readXlsxFile = require("read-excel-file/node"); 
+const convertToJSON = require("./convExcelToJson");
 
-let mongoXlsx = require('mongo-xlsx');
+
 const jwt = require('jsonwebtoken');
-const { request } = require('http');
 require('dotenv').config();
 
 
@@ -188,6 +188,7 @@ exports.download = (req, res) => {
           { header: "priceToConsumer", key: "priceToConsumer", width: 25 },
           { header: "discountPercentage", key: "discountPercentage", width: 25 },
           { header: "taxPercentage", key: "taxPercentage", width: 25 },
+          { header: "condition", key: "condition", width: 25 },
           { header: "homepageCategory", key: "homepageCategory", width: 25 },
           { header: "countryofOrigin", key: "countryofOrigin", width: 25 },
           { header: "strength", key: "strength", width: 25 },
@@ -232,46 +233,13 @@ exports.upload=(req,res)=>{
           return res.status(400).send("Please upload an excel file!");
         }
         let path =__dirname+"/resources/static/assets/uploads/" + req.file.filename;
-        readXlsxFile(path).then((rows) => {
-          // skip header
-          rows.shift();
-          let tutorials = [];
-          rows.forEach((row) => {
-            let tutorial = new Product({
-                productName:row[0],
-                productCode:row[1],
-                dossageForm:row[2],
-                pakkingForm:row[3],
-                pakkinDisplay:row[4],
-                weight:row[5],
-                care:row[6],
-                salt:row[7],
-                saltGroup:row[8],
-                speciality:row[9],
-                manufacturer:row[10],
-                mrp:row[11],
-                priceToConsumer:row[12],
-                discountPercentage:row[13],
-                taxPercentage:row[14],
-                condition:row[15],
-                homepageCategory:row[16],
-                countryofOrigin:row[17],
-                strength:row[18],
-                stock:row[19],
-                prescriptionRequired:row[20],
-                pap:row[21],
-                PAPOffer:row[22],
-                abcd:row[23],
-                Title:row[24],
-                Keywords:row[25],
-                Description:row[26],
-            }, {new: true}); 
-            console.log(tutorial);
-            tutorials.push(tutorial);
-        });
-          console.log("tutorials:",tutorials);
-          const options = { ordered: true };          
-          Product.insertMany(tutorials,options)
+        readXlsxFile(path).then((values) => {
+          const data=JSON.stringify(convertToJSON(values));
+          console.log(data);
+          var myObj=JSON.parse(data)
+          
+          const options = { new:true };          
+          Product.insertMany(myObj,options) 
             .then(() => {
               res.status(200).send({
                 message: "Uploaded the file successfully: " + req.file.originalname,
